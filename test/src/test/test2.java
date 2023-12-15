@@ -77,10 +77,24 @@ public class test2 implements Runnable{
 		continue;
 	    }
 	}
+	scanner.close();
 	try{
 	    socket = serverSocket.accept(); //wait for connection
 	}catch(IOException e){
 	    System.out.println("Error accepting connection");
+	}
+	System.out.println("Enter message: ");
+	Scanner scanner2 = new Scanner(System.in);
+	String out = "";
+	while(true){
+	    try{
+		out = scanner2.nextLine();
+		dos.writeUTF(out);
+		dos.flush();
+	    }catch(Exception e){
+		System.out.println("Error sending data!");
+		return;
+	    }
 	}
     }
 
