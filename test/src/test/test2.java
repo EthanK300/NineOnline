@@ -5,21 +5,24 @@ import java.util.Scanner;
 
 public class test2 implements Runnable{
     boolean playing = true;
-    static DataInputStream dis = null;
-    public static void main(String[] args) {
+    DataInputStream dis = null;
+    Scanner scanner = new Scanner(System.in);
+
+    public test2(){
+        //empty constructor
+    }
+
+    public void init(){
 	System.out.println("Type 'h' to host a game, and 'j' to join a game");
-	Scanner scanner = new Scanner(System.in);
 	String inLine = "";
-	Thread thread = new Thread();
+	Thread thread = new Thread(this);
 	thread.start();
 	while(true){
 	    inLine = scanner.nextLine();
-	    if(inLine == "h"){
-		scanner.close();
+	    if(inLine.equals("h")){
 		host();
 		return;
-	    }else if(inLine == "j"){
-		scanner.close();
+	    }else if(inLine.equals("j")){
 		join();
 		return;
 	    }else{
@@ -27,9 +30,13 @@ public class test2 implements Runnable{
 	    }
 	}
     }
+    
+    public static void main(String[] args) {
+	test2 test = new test2();
+	test.init();
+    }
 
-    public static void join(){
-	Scanner scanner = new Scanner(System.in);
+    public void join(){
 	String hostName = "";
 	String pNumber = "";
 	DataOutputStream dos = null;
@@ -50,16 +57,35 @@ public class test2 implements Runnable{
 	    try{
 		dis = new DataInputStream(socket.getInputStream());
 		dos = new DataOutputStream(socket.getOutputStream());
+		break;
 	    }catch(IOException ie){
 		System.out.println("Error! Data streams died! Try again!");
 		continue;
 	    }
-	    
+	}
+	System.out.println("Enter message: ");
+	String out = "";
+	while(true){
+	    try{
+		out = scanner.nextLine();
+		dos.writeUTF(out);
+		dos.flush();
+	    }catch(Exception e){
+		try{
+		    dis.readUTF();
+		}catch(Exception f){
+		    System.out.println("Closed connection.");
+		    System.exit(0);
+		    return;
+		}
+		System.out.println("Error sending data!");
+		e.printStackTrace();
+		return;
+	    }
 	}
     }
 
-    public static void host(){
-	Scanner scanner = new Scanner(System.in);
+    public void host(){
 	String pNumber = "";
 	DataOutputStream dos = null;
 	Socket socket = null;
@@ -77,22 +103,32 @@ public class test2 implements Runnable{
 		continue;
 	    }
 	}
-	scanner.close();
+	System.out.println("Waiting for connection...");
 	try{
-	    socket = serverSocket.accept(); //wait for connection
+	    socket = serverSocket.accept();
+	    //wait for connection
+	    dos = new DataOutputStream(socket.getOutputStream());
+	    dis = new DataInputStream(socket.getInputStream());
 	}catch(IOException e){
 	    System.out.println("Error accepting connection");
 	}
 	System.out.println("Enter message: ");
-	Scanner scanner2 = new Scanner(System.in);
 	String out = "";
 	while(true){
 	    try{
-		out = scanner2.nextLine();
+		out = scanner.nextLine();
 		dos.writeUTF(out);
 		dos.flush();
 	    }catch(Exception e){
+		try{
+		    dis.readUTF();
+		}catch(Exception f){
+		    System.out.println("Closed connection.");
+		    System.exit(0);
+		    return;
+		}
 		System.out.println("Error sending data!");
+		e.printStackTrace();
 		return;
 	    }
 	}
@@ -100,16 +136,21 @@ public class test2 implements Runnable{
 
     @Override
     public void run() {
+	System.out.println("Started new thread");
 	String printer = "";
+	boolean wasConnected = false;
 	while(true) {
-	    if(dis == null){
-		continue;
-	    }
 	    try {
 		printer = (String)dis.readUTF();
+		wasConnected = true;
 		System.out.println("* " + printer);
 	    }catch(Exception e) {
-		//
+		if(wasConnected){
+		    System.out.println("Connection closed abruptly!");
+		    scanner.close();
+		    System.exit(0);
+		    return;
+		}
 	    }
 	}
     }
